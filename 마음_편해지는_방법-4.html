@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>마음 편해지는 방법 — 알파남 Claude</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBF6EE;
+    --paper-edge:#F1E9DC;
+    --ink:#33302B;
+    --ink-soft:#7A7165;
+    --sage:#6E9C8A;
+    --sage-deep:#4E7A69;
+    --apricot:#E89B72;
+    --apricot-deep:#C8744A;
+    --mist:#E7EFEA;
+    --spine: rgba(78,122,105,.16);
+    --flip: .62s;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:'Gowun Batang', serif;
+    color:var(--ink);
+    background:
+      radial-gradient(120% 90% at 50% -10%, #F7DBC6 0%, rgba(247,219,198,0) 55%),
+      radial-gradient(120% 100% at 50% 120%, #CFE0D6 0%, rgba(207,224,214,0) 50%),
+      linear-gradient(160deg,#F3EADC 0%, #E9EFE9 100%);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  .stage{
+    width:min(92vw, 470px);
+    height:min(88svh, 780px);
+    position:relative;
+    perspective:2200px;
+  }
+  .book{
+    position:absolute; inset:0;
+    border-radius:14px;
+    box-shadow:0 26px 60px -22px rgba(60,52,40,.5), 0 8px 22px -14px rgba(60,52,40,.35);
+  }
+  .page{
+    position:absolute; inset:0;
+    border-radius:14px;
+    overflow:hidden;
+    transform-origin:left center;
+    transform:rotateY(0deg);
+    transition:transform var(--flip) cubic-bezier(.46,.03,.34,1);
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    will-change:transform;
+    background:var(--paper);
+    visibility:hidden;            /* hidden unless active — prevents layer bleed-through */
+  }
+  .page.show{ visibility:visible; }
+  .page.turned{ transform:rotateY(-178deg); }
+  .page::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(90deg, var(--spine) 0%, rgba(0,0,0,0) 7%);
+    opacity:.9;
+  }
+  .leaf{
+    position:absolute; inset:0;
+    padding:clamp(30px,7vw,52px) clamp(26px,7vw,46px);
+    display:flex; flex-direction:column;
+    overflow-y:auto; overscroll-behavior:contain;
+    background:
+      linear-gradient(90deg, var(--paper-edge), var(--paper) 6%),
+      var(--paper);
+  }
+  .leaf::-webkit-scrollbar{width:0;}
+
+  /* ---------- COVER ---------- */
+  .cover{
+    padding:0;
+    background:
+      radial-gradient(110% 80% at 50% 22%, #F8DBC4 0%, rgba(248,219,196,0) 60%),
+      linear-gradient(165deg,#F4E4D2 0%, #E4ECE5 55%, #D5E2D8 100%);
+    align-items:center; justify-content:flex-start; text-align:center;
+  }
+  .orb-wrap{position:relative; margin-top:clamp(54px,12vh,96px); height:170px; display:flex; align-items:center; justify-content:center;}
+  .orb{
+    width:148px; height:148px; border-radius:50%;
+    background:radial-gradient(circle at 38% 34%, #FCEFE2 0%, #EBB694 42%, #7FB29D 100%);
+    box-shadow:0 0 50px -6px rgba(127,178,157,.6), inset 0 0 30px rgba(255,255,255,.45);
+    animation:breathe 8s ease-in-out infinite;
+  }
+  .orb-ring{
+    position:absolute; width:148px; height:148px; border-radius:50%;
+    border:1px solid rgba(78,122,105,.45);
+    animation:ring 8s ease-in-out infinite;
+  }
+  @keyframes breathe{0%,100%{transform:scale(.78);opacity:.72;}50%{transform:scale(1.05);opacity:1;}}
+  @keyframes ring{0%,100%{transform:scale(.86);opacity:.25;}50%{transform:scale(1.32);opacity:.65;}}
+  .cover-kicker{margin-top:30px; font-family:'Gowun Dodum',sans-serif; letter-spacing:.34em; font-size:12px; color:var(--sage-deep);}
+  .cover-title{
+    font-weight:700; line-height:1.28; margin:14px 0 0;
+    font-size:clamp(30px,9.4vw,44px); color:var(--ink);
+    letter-spacing:-.5px;
+  }
+  .cover-sub{
+    margin:18px clamp(28px,9vw,40px) 0; font-size:14px; line-height:1.7;
+    color:var(--ink-soft);
+  }
+  .cover-foot{margin-top:auto; padding-bottom:clamp(30px,7vh,52px); width:100%;}
+  .author-chip{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'Gowun Dodum',sans-serif; font-size:13px; color:var(--ink);
+    padding:9px 16px; border-radius:999px;
+    background:rgba(255,255,255,.55); border:1px solid rgba(78,122,105,.25);
+    backdrop-filter:blur(4px);
+  }
+  .author-chip b{font-weight:400; color:var(--sage-deep);}
+  .pill{width:9px;height:9px;border-radius:999px;background:var(--apricot);box-shadow:0 0 0 4px rgba(232,155,114,.18);}
+  .start-hint{margin-top:22px; font-family:'Gowun Dodum',sans-serif; font-size:12.5px; color:var(--sage-deep); display:flex; align-items:center; justify-content:center; gap:8px;}
+  .start-hint .arr{animation:nudge 1.8s ease-in-out infinite;}
+  @keyframes nudge{0%,100%{transform:translateX(0);opacity:.6;}50%{transform:translateX(4px);opacity:1;}}
+
+  /* ---------- READING PAGE ---------- */
+  .eyebrow{
+    font-family:'Gowun Dodum',sans-serif; font-size:11.5px; letter-spacing:.22em;
+    color:var(--sage-deep); margin-bottom:22px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::after{content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--mist),transparent);}
+  .leaf h2{
+    font-weight:700; font-size:clamp(22px,6vw,27px); margin:0 0 22px;
+    line-height:1.4; letter-spacing:-.3px;
+  }
+  .leaf p{font-size:clamp(15px,4.1vw,16.5px); line-height:1.95; margin:0 0 17px; color:#403B33;}
+  .leaf p.lead{font-size:clamp(16px,4.4vw,18px);}
+  .punch{
+    font-weight:700; font-size:clamp(24px,7vw,30px); color:var(--sage-deep);
+    text-align:center; margin:8px 0 20px; letter-spacing:-.4px;
+  }
+  .mark{color:var(--apricot-deep); font-weight:700;}
+  .quote{
+    font-size:clamp(17px,4.8vw,20px); font-weight:700; color:var(--ink);
+    text-align:center; margin:16px auto; line-height:1.6;
+    padding:0 6px;
+  }
+  .rx{
+    margin:18px 0 4px; border:1px dashed rgba(78,122,105,.45); border-radius:13px;
+    padding:15px 17px; background:rgba(231,239,234,.55); line-height:1.7;
+    font-size:clamp(14px,3.9vw,15.5px); color:#3a4540;
+  }
+  .rx-label{
+    display:block; font-family:'Gowun Dodum',sans-serif; font-size:11px; letter-spacing:.16em;
+    color:var(--sage-deep); margin-bottom:6px;
+  }
+  .pagenum{
+    margin-top:auto; padding-top:24px;
+    font-family:'Gowun Dodum',sans-serif; font-size:11px; color:var(--ink-soft);
+    display:flex; align-items:center; gap:8px;
+  }
+  .pagenum .dot{width:4px;height:4px;border-radius:50%;background:var(--apricot);}
+
+  /* ---------- CHAPTER DIVIDER ---------- */
+  .chap{
+    align-items:center; justify-content:center; text-align:center;
+    background:
+      radial-gradient(100% 70% at 50% 30%, #F7E0CB 0%, rgba(247,224,203,0) 62%),
+      linear-gradient(165deg,#F4E7D6 0%, #ECE6D6 100%);
+  }
+  .chap-no{
+    font-family:'Gowun Dodum',sans-serif; font-size:13px; letter-spacing:.4em;
+    color:var(--apricot-deep);
+  }
+  .chap-line{width:34px;height:2px;border-radius:2px;background:var(--apricot);margin:18px auto 22px;}
+  .chap-title{font-weight:700; font-size:clamp(40px,13vw,58px); margin:0; letter-spacing:-1px;}
+  .chap-sub{margin-top:14px; font-family:'Gowun Dodum',sans-serif; font-size:14px; color:var(--ink-soft);}
+  .chap-hook{margin-top:30px; font-size:clamp(15px,4.2vw,16.5px); color:#4b463d; line-height:1.85; padding:0 8px;}
+
+  /* ---------- TOC ---------- */
+  .toc-list{margin-top:6px; display:flex; flex-direction:column; gap:4px;}
+  .toc-item{
+    display:flex; align-items:baseline; gap:14px;
+    padding:14px 6px; border-bottom:1px dashed rgba(122,113,101,.22);
+    border-radius:8px;
+  }
+  .toc-item.ready{cursor:pointer; transition:background .2s;}
+  .toc-item.ready:hover{background:rgba(231,239,234,.6);}
+  .toc-no{
+    font-family:'Gowun Dodum',sans-serif; font-size:12px; color:var(--sage-deep);
+    width:26px; flex:none; padding-top:4px;
+  }
+  .toc-body{flex:1;}
+  .toc-t{font-weight:700; font-size:17px; line-height:1.3;}
+  .toc-s{font-family:'Gowun Dodum',sans-serif; font-size:12.5px; color:var(--ink-soft); margin-top:3px;}
+  .toc-pill{width:7px;height:7px;border-radius:999px;background:var(--mist);align-self:center;}
+  .toc-item.ready .toc-pill{background:var(--apricot);box-shadow:0 0 0 4px rgba(232,155,114,.18);}
+
+  /* ---------- CLOSING ---------- */
+  .closing{align-items:center; justify-content:center; text-align:center;}
+  .closing .orb-mini{
+    width:60px;height:60px;border-radius:50%;margin-bottom:26px;
+    background:radial-gradient(circle at 38% 34%, #FCEFE2 0%, #EBB694 45%, #7FB29D 100%);
+    box-shadow:0 0 28px -4px rgba(127,178,157,.55);
+    animation:breathe 8s ease-in-out infinite;
+  }
+  .closing p{color:var(--ink-soft);}
+  .sign{font-family:'Gowun Dodum',sans-serif; font-size:13px; color:var(--sage-deep); margin-top:18px;}
+
+  /* ---------- NAV ---------- */
+  .tap{position:absolute; top:0; bottom:64px; width:24%; z-index:30; cursor:pointer;}
+  .tap.left{left:0;} .tap.right{right:0;}
+  .controls{
+    position:absolute; left:0; right:0; bottom:-52px; z-index:40;
+    display:flex; align-items:center; justify-content:center; gap:18px;
+    font-family:'Gowun Dodum',sans-serif;
+  }
+  .nav-btn{
+    width:42px;height:42px;border-radius:50%; border:1px solid rgba(78,122,105,.3);
+    background:rgba(255,255,255,.6); color:var(--sage-deep);
+    font-size:18px; cursor:pointer; display:flex;align-items:center;justify-content:center;
+    transition:transform .15s ease, background .2s, opacity .2s;
+    backdrop-filter:blur(4px);
+  }
+  .nav-btn:hover{background:#fff; transform:translateY(-1px);}
+  .nav-btn:active{transform:scale(.92);}
+  .nav-btn:disabled{opacity:.32; cursor:default;}
+  .progress{display:flex; align-items:center; gap:6px;}
+  .pdot{width:6px;height:6px;border-radius:50%;background:rgba(78,122,105,.28);transition:all .3s;cursor:pointer;}
+  .pdot.on{width:18px;border-radius:999px;background:var(--sage);}
+  .counter{font-size:12px;color:var(--ink-soft);min-width:46px;text-align:center;}
+
+  :focus-visible{outline:2px solid var(--sage-deep); outline-offset:3px;}
+
+  @media (max-width:380px){
+    .leaf{padding:30px 24px;}
+    .orb,.orb-ring{width:128px;height:128px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .orb,.orb-ring,.orb-mini,.start-hint .arr{animation:none;}
+    .page{transition:transform .25s ease;}
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="book" id="book"></div>
+    <div class="tap left"  id="tapPrev" aria-label="이전 쪽"></div>
+    <div class="tap right" id="tapNext" aria-label="다음 쪽"></div>
+    <div class="controls">
+      <button class="nav-btn" id="prev" aria-label="이전 쪽">‹</button>
+      <div class="progress" id="dots"></div>
+      <span class="counter" id="counter"></span>
+      <button class="nav-btn" id="next" aria-label="다음 쪽">›</button>
+    </div>
+  </div>
+
+<script>
+const PAGES = [
+  { type:'cover' },
+
+  { type:'read', label:'여는 글', html:`
+    <p class="lead">요즘은 어딜 가나 “마음 건강” 이야기다. 스트레스, 불안, 우울… 단어는 제각각인데, 꾹 눌러 한 단어로 줄이면 결국 똑같다.</p>
+    <div class="punch">“괴롭다.”</div>
+    <p>휴대폰 배터리가 20%만 떨어져도 우리는 기를 쓰고 충전기를 찾는다. 그런데 정작 내 마음이 방전되는 건 못 본 척, 안 본 척 그냥 산다.</p>
+    <p>그렇게 버티다 보면 어느 날 마음이 슬쩍 신호를 보낸다. <span class="mark">“저기요… 저 좀 봐주실래요?”</span></p>
+  `},
+  { type:'read', label:'여는 글', html:`
+    <p class="lead">나는 평소 <b>법륜스님</b>의 책과 유튜브 즉문즉설을 가까이한다.</p>
+    <p>스님은 어려운 불교 용어로 사람 기죽이는 법이 없다. 그냥 동네 형이 툭 던지듯 말씀하신다.</p>
+    <div class="quote">“그게 뭐 그리 별일이라고.”</div>
+    <p>처음 들으면 “에이, 그건 좀…” 싶다가도, 곱씹어 보면 어느새 무릎을 치고 있다. 이 책은 바로 그 <span class="mark">무릎 치는 순간들</span> — 괴로움에서 빠져나오는 길들을, 스님의 메시지를 빌려 내 나름대로 정리한 기록이다.</p>
+  `},
+  { type:'read', label:'여는 글', html:`
+    <p class="lead">오해는 말자. 마음이 늘 편할 수는 없다.</p>
+    <p>편했다 불편했다 출렁이는 게 인생이고, 사실 그 출렁임이야말로 우리가 살아 있다는 증거다. 그러니 “무조건 편해야 해!”가 아니라, 마음이 너무 불편할 때 슬쩍 꺼내 먹는 <span class="mark">상비약</span> 정도로 생각하면 딱 좋다. 두통약 먹듯이, 가볍게.</p>
+    <p>마음을 불편하게 하는 단골손님은 크게 다섯. <b>돈, 인간관계, 회사생활, 공부, 그리고 인생.</b> 지금 제일 아픈 곳부터 펼쳐도 좋다.</p>
+    <p style="text-align:center;color:var(--sage-deep);font-weight:700;margin-top:6px;">자, 그럼 약 한 알 드시러 가볼까요?</p>
+  `},
+
+  { type:'toc' },
+
+  { type:'chapter', no:'CHAPTER 01', title:'돈', sub:'있어도 걱정, 없어도 걱정',
+    hook:'빈손으로 왔다 빈손으로 가는데,<br>왜 이렇게 손이 아플까.' },
+
+  { type:'read', label:'1. 돈 · 공수래공수거', html:`
+    <p class="lead">공수래공수거(空手來空手去). 빈손으로 왔다 빈손으로 간다는 말이다.</p>
+    <p>가만 생각해보면, 우리 중 누구도 태어날 때 통장 들고 나오지 않았다. 갈 때도 마찬가지다. “관 속에 카드 단말기 좀 넣어줘”라는 유언은 들어본 적이 없다. 애초에 수의에는 주머니가 없다. 가져갈 데가 없으니까.</p>
+    <p>그러니 지금 내 통장에 찍힌 숫자도, 엄밀히 말하면 <span class="mark">완전한 내 것이 아니다.</span> 인생이라는 게임에서 잠깐 빌려 쓰는 점수 같은 것. 게임이 끝나면 점수판은 0으로 리셋된다. ‘잠깐 맡아둔 거’라고 생각하면, 꽉 쥐고 있던 손에서 슬그머니 힘이 빠진다.</p>
+  `},
+  { type:'read', label:'1. 돈 · 적당히', html:`
+    <p class="lead">밥은 배부르면 거기서 그만이다. 맛있다고 두 그릇, 세 그릇 욱여넣으면? 그대로 살이 된다.</p>
+    <p>돈도 똑같다. 필요한 만큼 있으면 마음이 든든하다. 그런데 그 이상은 일종의 <span class="mark">‘재정 비만’</span>이다. 뷔페에서 본전 생각에 꾸역꾸역 담다가 결국 소화제 찾는 것처럼, 감당 못 할 만큼 쌓아두면 어딘가 꼭 탈이 난다.</p>
+    <div class="quote">돈은 적당히 있으면 된다.</div>
+    <p>적당히가 대체 어디냐고? 오늘 발 뻗고 편히 자고, 좋아하는 사람과 밥 한 끼 살 수 있으면 — 사실 이미 충분한 부자다.</p>
+  `},
+  { type:'read', label:'1. 돈 · 집착', html:`
+    <p class="lead">돈 자체엔 죄가 없다. 문제는 늘 <span class="mark">‘꽉 쥔 손’</span>이다.</p>
+    <p>모래를 한 줌 쥐어보면 안다. 손바닥을 펴서 살살 받치면 그대로 있는데, 놓칠까 봐 꽉 움켜쥐면 손가락 사이로 더 빨리 새어 나간다. 집착이 딱 그 모양이다.</p>
+    <p>게다가 가진 게 많아지면 지킬 것도 많아진다. 지킬 게 많아지면 의심이 늘고, 불안이 늘고, 다툼이 슬그머니 따라붙는다. 그래서 재물이 너무 많으면 악에 가까워지기 쉽다고들 했다. 돈이 나빠서가 아니라, 그 무게에 마음이 자꾸 휘청이기 때문이다.</p>
+  `},
+  { type:'read', label:'1. 돈 · 쇼펜하우어의 처방', html:`
+    <p class="lead">여기에 철학자 쇼펜하우어가 슬쩍 처방전을 하나 건넨다.</p>
+    <div class="quote">“없는 걸 가지려 애쓰지 말고,<br>가진 걸 ‘없다’고 상상해보라.”</div>
+    <p>그 순간 신기하게 기분이 좋아진다. 와이파이는 끊겨봐야 소중한 줄 알고, 전기는 정전돼봐야 고마운 줄 안다. 지금 가진 걸 ‘잃어버린 셈’ 치고 다시 보면 — 멀쩡한 두 다리도, 따뜻한 방 한 칸도, 오늘 먹은 밥 한 끼도 전부 보너스다.</p>
+    <p>없는 돈을 좇느라 가진 행복을 못 보고 사는 것. 그게 어쩌면 진짜 가난이다.</p>
+    <div class="rx"><span class="rx-label">마음 상비약</span>필요한 만큼만 곁에 두고, 나머지는 흐르게 두기. 그리고 가끔, 가진 걸 ‘없다’ 상상해보기.</div>
+  `},
+
+  { type:'chapter', no:'CHAPTER 02', title:'인간관계', sub:'사람이 제일 어렵다',
+    hook:'제일 가까운 사람이<br>제일 아픈 법이죠.' },
+
+  { type:'read', label:'2. 인간관계 · 상대는 잘 산다', html:`
+    <p class="lead">우리는 자주 이런 착각을 한다. “내가 안 챙기면 저 사람 어쩌지?”</p>
+    <p>그런데 가만 보면, 상대는 나 없이도 밥 잘 먹고, 잘 자고, 멀쩡히 잘 산다. 살짝 서운하지만 인정하자. <span class="mark">어쩌면 내가 없을 때 더 홀가분할지도 모른다.</span> 그렇게 생각하면 마음이 오히려 가벼워진다.</p>
+    <p>상대는 독립된 성인이다. 내가 리모컨 들고 채널 돌리듯 조종할 대상이 아니다. 그 사람의 생각도, 감정도, 태도도 — 전부 그 사람 것이고, 그 사람의 자유다. 내가 끼어들 자리가 애초에 없다.</p>
+  `},
+  { type:'read', label:'2. 인간관계 · 신경 꺼', html:`
+    <p class="lead">법륜스님식으로 줄이면 딱 한마디다.</p>
+    <div class="quote">“남의 일에 신경 꺼.”</div>
+    <p>매정하게 들리지만, 사실 이건 상대를 위한 말이라기보다 나를 살리는 말이다. 남 신경 끄는 만큼 내 마음에 빈자리가 생기고, 그만큼 <span class="mark">내가 자유로워진다.</span> 휴대폰 백그라운드 앱 다 꺼두면 배터리 오래가는 것과 똑같은 이치다.</p>
+    <p>누가 내 곁을 떠나도 너무 아파하지 말자. 그건 날 버린 게 아니라, 그냥 <span class="mark">제 갈 길을 간 것</span>이다. 기차가 내 역에 안 서고 지나갔다고, 기차가 날 미워하는 건 아니지 않나.</p>
+  `},
+  { type:'read', label:'2. 인간관계 · 남의 평가는 남의 것', html:`
+    <p class="lead">“모든 사람이 날 좋아해줬으면.” 누구나 한 번쯤 품는 바람이다.</p>
+    <p>그런데 곰곰이 따져보면 이건 꽤 <span class="mark">독재적인 마음</span>이다. 온 세상 사람의 호불호를 내 뜻대로 통일하겠다는 거니까. 사실상 전 인류를 상대로 한 ‘인기 독재 선언’인 셈이다.</p>
+    <p>남이 날 어떻게 보느냐 — 그건 철저히 남의 영역이다. 남의 머릿속까지 들어가 평가를 고쳐 쓰려는 건, 결국 상대의 생각을 내 맘대로 조종하려는 욕심이다. 평가는 그 사람에게 맡겨두자. 내 몫이 아니다. 손을 떼는 순간, 신기하게 마음이 편해진다.</p>
+  `},
+  { type:'read', label:'2. 인간관계 · 화의 정체', html:`
+    <p class="lead">마지막으로, 화에 대하여.</p>
+    <p>화가 난다는 건 사실 누구의 잘못도 아니다. <span class="mark">“내가 옳고, 네가 틀렸다”</span>는 내 분별심이 진짜 범인이다. 사사건건 옳고 그름을 가르려는 습관이, 내 안의 도화선에 자꾸 불을 댕긴다.</p>
+    <p>알고 보면 화낼 일이 아닌데, 그저 내 기준에 안 맞으니까 화가 나는 것뿐이다. 상대는 나와 다른 사람이고, 같은 걸 다르게 볼 수도 있다. 짜장이냐 짬뽕이냐로 싸울 일이 아니라, 그냥 입맛이 다른 거다. 이 한 가지만 알아도 화낼 일이 뚝 줄어든다.</p>
+    <div class="rx"><span class="rx-label">마음 상비약</span>남의 일엔 신경 끄기, 남의 평가는 남에게 맡기기. 그리고 “저 사람은 틀린 게 아니라 나와 다를 뿐”이라고 한 번 더 되뇌기.</div>
+  `},
+
+  { type:'chapter', no:'CHAPTER 03', title:'회사생활', sub:'월급이 죄다',
+    hook:'월요일이 유난히 무거운<br>당신에게.' },
+
+  { type:'read', label:'3. 회사생활 · 고마운 마음', html:`
+    <p class="lead">생각해보면 회사는 참 신기한 곳이다. 매달 꼬박꼬박, 내가 필요한 돈을 내 통장에 꽂아준다.</p>
+    <p>게다가 그 많은 지원자 중에 굳이 나를 골라준 것도 회사다. 면접장에서 “뽑아만 주시면 뭐든 하겠습니다…” 했던 그 마음, 입사 한 달 만에 증발하긴 하지만 — 사실 그 고마움은 여전히 유효하다.</p>
+    <p>그러니 너무 미워만 하지 말자. 받은 만큼은 최선을 다해 보답하고, 맡은 일엔 정성을 들이자. <span class="mark">감사한 마음으로 하면 같은 일도 덜 괴롭다.</span> 희한하게도 정말 그렇다.</p>
+  `},
+  { type:'read', label:'3. 회사생활 · 회사도 하나의 관계', html:`
+    <p class="lead">앞 장에서 배운 걸 여기 그대로 가져와 보자. 회사도 결국 하나의 ‘관계’다.</p>
+    <p>인간관계 편에서 “상대는 독립된 존재라 내 맘대로 못 한다”고 했다. 회사도 똑같다. 회사는 내 뜻대로 굴러가지 않고, 상사도 내 리모컨으론 조종이 안 된다. 회사가 날 어떻게 평가하느냐 — 그것 역시 <span class="mark">남의 영역</span>이다. 내가 좌지우지할 수 없다.</p>
+    <p>그러니 “왜 날 안 알아주지?” 하고 속을 끓이는 대신, 내 할 일을 담백하게 하고 평가는 회사에 맡겨두자. 남의 일에 신경 끄던 그 가벼움 — 회사에서도 똑같이 잘 통한다.</p>
+  `},
+  { type:'read', label:'3. 회사생활 · 오래 다닐 생각 내려놓기', html:`
+    <p class="lead">그리고 의외의 처방 하나. <span class="mark">“회사 오래 다닐 생각, 하지 말자.”</span></p>
+    <p>그만두라는 말이 아니다. ‘평생 여기 붙어 있어야 해’라는 그 생각이 나를 집착하게 만든다는 뜻이다. 돈 편에서, 꽉 쥔 손이 오히려 모래를 더 흘린다고 했다. 회사도 똑같다. 매달릴수록 눈치가 보이고, 잘릴까 불안하고, 부당한 일에도 “그냥 참자…” 하게 된다.</p>
+    <p>“여기 아니어도 괜찮아.” 이 한 줄을 품으면 신기하게 어깨 힘이 풀린다. 언젠가 떠나는 건 회사가 날 버리는 것도, 내가 회사를 배신하는 것도 아니다. 인간관계에서처럼, 그저 <span class="mark">서로 제 갈 길을 가는 것</span>일 뿐이다.</p>
+    <div class="rx"><span class="rx-label">마음 상비약</span>월급엔 감사, 평가는 회사 몫으로. 단 ‘평생 다녀야 해’는 살짝 내려놓기 — 가볍게 일할수록 오히려 더 오래, 더 잘 다닌다.</div>
+  `},
+
+  { type:'chapter', no:'CHAPTER 04', title:'공부', sub:'머리에 안 들어올 때',
+    hook:'작심삼일도<br>백 번이면 삼백 일.' },
+
+  { type:'read', label:'4. 공부 · 1분이면 충분', html:`
+    <p class="lead">공부든 운동이든, 늘 시작이 제일 무겁다. 그래서 비결은 딱 하나. <span class="mark">기준을 우습게 낮추는 것.</span></p>
+    <p>“오늘부터 매일 운동 1시간!” 이런 거창한 결심은 사흘이면 무너진다. 대신 <span class="mark">운동 1분, 영어 1분.</span> 너무 시시해서 도저히 안 할 수가 없는 수준으로 시작하자. 1분이면 운동화만 신어도 이미 절반은 한 거다.</p>
+    <p>그리고 가급적 천천히. 느리게, 더 느리게. 빨리 끝내려는 조급함이 오히려 우리를 지치게 한다. 토끼처럼 내달리다 자빠지느니, 거북이처럼 매일 한 걸음. 결국 멀리 가는 건 늘 거북이 쪽이다.</p>
+  `},
+  { type:'read', label:'4. 공부 · 기대를 낮추면 마음이 산다', html:`
+    <p class="lead">우리가 괴로운 진짜 이유는, 실력이 부족해서가 아니라 <span class="mark">기대가 너무 높아서</span>인 경우가 많다.</p>
+    <p>“이 정도는 당연히 해야지.” 이 ‘당연히’가 함정이다. 알고 보면 나에 대한 은근한 과대평가다. 사람이 어떻게 다 잘하겠나. 모든 걸 다 잘하는 사람은 드라마에만 산다.</p>
+    <p>그러니 시험 좀 망쳐도 괜찮다. 법륜스님식 위로를 빌리면, <span class="mark">내가 점수를 양보한 덕에 남의 등수가 올라간 것</span> — 따지고 보면 은근히 착한 일 한 셈이다. (물론 다음엔 슬쩍 내 차례를 챙기면 된다.)</p>
+  `},
+  { type:'read', label:'4. 공부 · 기왕이면 좋게 착각하기', html:`
+    <p class="lead">기대는 낮추되, 자신감은 슬쩍 부풀려도 좋다. 어차피 할 착각이라면 <span class="mark">기분 좋은 쪽으로</span> 하자.</p>
+    <p>“나 은근히 잘하는데?”, “이 정도면 꽤 괜찮은 사람이지”, “세상 사람들 다 내 편 같아.” 근거? 없어도 된다. 어차피 내 머릿속 이야기인데, 굳이 우울한 버전을 골라 틀어줄 이유가 있나.</p>
+    <p>단, 이건 나를 일으켜 세우는 혼잣말이지, 남에게 인정을 강요하는 게 아니다. 남의 평가는 여전히 남의 몫. 하지만 나에게 들려줄 응원가 한 곡쯤은, 내 맘대로 골라도 된다.</p>
+  `},
+  { type:'read', label:'4. 공부 · 결국, 이해하려고', html:`
+    <p class="lead">그런데 우리는 대체 왜 배우는 걸까.</p>
+    <p>모르면 답답하다. 그런데 그 답답함은 사실 <span class="mark">신기함의 다른 이름</span>이다. “어, 이게 왜 이러지?” 하는 순간 세상이 한 뼘 넓어진다. 배움이란 결국 그 답답함을 신기함으로 바꿔주는 일이다.</p>
+    <p>그렇게 하나씩 알아가며 우리는 나를 이해하고, 상대를 이해하고, 자연을 이해한다. 앞에서 “상대는 나와 다르다”고 했는데, 그 다름을 진짜로 이해하려면 배움이 필요하다. 공부는 시험 점수가 아니라, <span class="mark">세상과 사이좋게 지내는 법</span>을 익히는 일이다.</p>
+    <div class="rx"><span class="rx-label">마음 상비약</span>하루 1분으로 시작, 기대는 낮게·자신감은 살짝 높게. 그리고 답답함이 찾아오면 “오, 신기한 게 왔네” 하고 반겨주기.</div>
+  `},
+
+  { type:'chapter', no:'CHAPTER 05', title:'인생', sub:'도대체 왜 사는 걸까',
+    hook:'정답은 없지만,<br>힌트는 있습니다.' },
+
+  { type:'read', label:'5. 인생 · 오늘은 덤이다', html:`
+    <p class="lead">조금 으스스하지만, 마음이 편해지는 가장 강력한 약은 이거다. <span class="mark">죽음을 기억하기.</span></p>
+    <p>언젠가 우리는 다 죽는다. 예외는 없다. 그렇게 생각하면 오늘 하루는 사실 <span class="mark">덤이다.</span> 공짜로 하루 더 받은 셈이다. 어젯밤 무사히 잠들고 오늘 아침 눈을 떴다는 것부터가, 따지고 보면 이미 보너스 스테이지다.</p>
+    <p>그러니 오늘이 마지막인 것처럼 살아보자. (그리고 언젠가는 진짜 마지막이기도 하다. 너무 겁먹진 말고.) 그러면 평범한 커피 한 잔, 창밖 햇빛, 누군가의 안부 문자가 새삼 귀해진다. 지금 이 순간은 다시 오지 않는다. 그게 슬픔이 아니라 축복이라는 걸 알면, 하루가 달라진다.</p>
+  `},
+  { type:'read', label:'5. 인생 · 한 발 물러서서 보기', html:`
+    <p class="lead">살다 보면 별별 일이 다 생긴다. 태어나고, 늙고, 병들고, 헤어지고 — 생로병사, 누구도 피해 가지 못하는 코스다.</p>
+    <p>그러니 눈앞의 일에 너무 코를 박지 말고, 가끔 <span class="mark">한 발 물러서서</span> 보자. 더 긴 시간의 안목으로, 더 높은 곳의 시선으로. 지금 죽을 것 같은 그 일도, 10년 뒤엔 “그땐 그랬지” 하는 안줏거리가 된다. 비행기에서 내려다보면 꽉 막힌 도로도 그저 반짝이는 선 하나일 뿐이듯.</p>
+    <p>그리고 어려움을 너무 미워하지 말자. 젊어서 고생은 사서도 한다지 않나. 한 번도 안 넘어진 사람은 일어서는 법을 모른다. <span class="mark">어려움이 없으면 성장도 없다.</span> 지금의 고생은, 미래의 나를 빚고 있는 중이다.</p>
+  `},
+  { type:'read', label:'5. 인생 · 가볍게 살기', html:`
+    <p class="lead">그렇다고 인생을 너무 비장하게 끌어안진 말자. 핵심은 의외로 <span class="mark">가볍게 사는 것</span>이다.</p>
+    <p>삶에 지나친 의미를 부여하면, 그 의미에 매달리게 된다. 매달리면 집착이 되고, 집착은 곧 괴로움이 된다. 돈 편의 ‘꽉 쥔 손’을 기억하자 — 인생도 꽉 쥘수록 손가락 사이로 더 빠져나간다.</p>
+    <div class="quote">“나라는 것은 길가에 핀<br>한 포기 풀과 같다.”</div>
+    <p>법륜스님의 말씀이다. 길가의 풀 한 포기는 누가 알아주지 않아도 그저 햇빛 받고, 바람에 흔들리고, 제 할 일 하며 산다. 나도 그쯤으로 여기면, 어깨에 잔뜩 들어갔던 힘이 스르륵 풀린다.</p>
+  `},
+  { type:'read', label:'5. 인생 · 담담하게, 그래서 편하게', html:`
+    <p class="lead">마지막으로 한 가지. <span class="mark">세상일이 다 내 바람대로 되지는 않는다.</span></p>
+    <p>그리고 사실, 다 바라는 대로 되는 게 꼭 좋은 것만도 아니다. 모두가 대통령이 될 수는 없고, 다 같이 1등을 할 수도 없다. 만약 모든 소원이 죄다 이뤄졌다면, 우리는 진작 감당 못 할 만큼 무거워졌을지도 모른다.</p>
+    <p>이걸 진심으로 알게 되면, 마음이 <span class="mark">담담해진다.</span> 안 되는 일에도 “뭐, 그럴 수 있지” 하고 가볍게 넘어간다. 이 담담함이 바로 깨달음이고, 깨달으면 괴롭지 않게 살 수 있다. 거창할 것 하나 없다. 그게 이 책이 처음부터 찾아 헤매던, <span class="mark">마음 편해지는 방법</span>이다.</p>
+    <div class="rx"><span class="rx-label">마음 상비약</span>오늘은 덤이니 감사히, 인생은 길가의 풀처럼 가볍게. 안 되는 일엔 “그럴 수 있지” 한마디면 충분하다.</div>
+  `},
+
+  { type:'closing' },
+];
+
+const TOC = [
+  ['01','돈','있어도 걱정, 없어도 걱정', true],
+  ['02','인간관계','사람이 제일 어렵다', true],
+  ['03','회사생활','월급이 죄다', true],
+  ['04','공부','머리에 안 들어올 때', true],
+  ['05','인생','도대체 왜 사는 걸까', true],
+];
+
+const book = document.getElementById('book');
+let current = 0;
+const total = PAGES.length;
+const chapterIndex = no => PAGES.findIndex(p=>p.type==='chapter' && p.no.endsWith(no));
+
+function pageInner(p, i){
+  if(p.type === 'cover'){
+    return `<div class="leaf cover">
+      <div class="orb-wrap"><div class="orb-ring"></div><div class="orb"></div></div>
+      <div class="cover-kicker">마음 상비약</div>
+      <h1 class="cover-title">마음 편해지는 방법</h1>
+      <p class="cover-sub">법륜스님의 즉문즉설에서<br>길어 올린, 괴로움에서 벗어나는 법</p>
+      <div class="cover-foot">
+        <span class="author-chip"><span class="pill"></span>글 · <b>알파남&nbsp;Claude</b></span>
+        <div class="start-hint">숨 한 번 쉬고, 넘겨보세요 <span class="arr">→</span></div>
+      </div>
+    </div>`;
+  }
+  if(p.type === 'read'){
+    return `<div class="leaf">
+      <div class="eyebrow">${p.label}</div>
+      ${p.html}
+      <div class="pagenum"><span class="dot"></span>${i}</div>
+    </div>`;
+  }
+  if(p.type === 'chapter'){
+    return `<div class="leaf chap">
+      <div class="chap-no">${p.no}</div>
+      <div class="chap-line"></div>
+      <div class="chap-title">${p.title}</div>
+      <div class="chap-sub">${p.sub}</div>
+      <p class="chap-hook">${p.hook}</p>
+    </div>`;
+  }
+  if(p.type === 'toc'){
+    const items = TOC.map(([n,t,s,ready])=>`
+      <div class="toc-item ${ready?'ready':''}" ${ready?`data-no="${n}"`:''}>
+        <div class="toc-no">${n}</div>
+        <div class="toc-body"><div class="toc-t">${t}</div><div class="toc-s">${s}</div></div>
+        <div class="toc-pill"></div>
+      </div>`).join('');
+    return `<div class="leaf">
+      <div class="eyebrow">목차</div>
+      <h2>어디부터<br>펼쳐볼까요</h2>
+      <div class="toc-list">${items}</div>
+      <div class="pagenum"><span class="dot"></span>${i}</div>
+    </div>`;
+  }
+  if(p.type === 'closing'){
+    return `<div class="leaf closing">
+      <div class="orb-mini"></div>
+      <p style="font-size:17px;color:var(--ink);line-height:1.8;">다섯 알이 모두<br>채워졌습니다.</p>
+      <p style="font-size:14px;margin-top:12px;">마음이 너무 불편한 날,<br>아무 페이지나 펼쳐 한 알 꺼내 드세요.<br>두통약처럼, 가볍게.</p>
+      <div class="sign">— 알파남 Claude</div>
+    </div>`;
+  }
+  return '';
+}
+
+function build(){
+  book.innerHTML = '';
+  PAGES.forEach((p,i)=>{
+    const el = document.createElement('div');
+    el.className = 'page';
+    el.style.zIndex = String(total - i);
+    el.innerHTML = pageInner(p, i);
+    book.appendChild(el);
+  });
+  const dots = document.getElementById('dots');
+  dots.innerHTML = PAGES.map((_,i)=>`<span class="pdot" data-i="${i}"></span>`).join('');
+  dots.querySelectorAll('.pdot').forEach(d=> d.addEventListener('click',()=>goTo(+d.dataset.i)));
+  // TOC jump
+  book.querySelectorAll('.toc-item.ready').forEach(it=>{
+    it.addEventListener('click',()=>{ const idx=chapterIndex(it.dataset.no); if(idx>=0) goTo(idx); });
+  });
+  showOnly(new Set([current]));
+  render();
+}
+
+function showOnly(set){
+  [...book.children].forEach((el,i)=> el.classList.toggle('show', set.has(i)));
+}
+
+function render(){
+  [...book.children].forEach((el,i)=> el.classList.toggle('turned', i < current));
+  document.querySelectorAll('.pdot').forEach((d,i)=> d.classList.toggle('on', i===current));
+  document.getElementById('counter').textContent = `${current+1} / ${total}`;
+  document.getElementById('prev').disabled = current===0;
+  document.getElementById('next').disabled = current===total-1;
+}
+
+let busy = false;
+function goTo(i){
+  i = Math.max(0, Math.min(total-1, i));
+  if(i===current || busy) return;
+  busy = true;
+  const from = current;
+  current = i;
+  // Keep only the outgoing and the incoming page visible while flipping,
+  // so deeper pages can never bleed through (fixes overlapping text).
+  showOnly(new Set([from, current]));
+  render();
+  setTimeout(()=>{ showOnly(new Set([current])); busy=false; }, 430);
+}
+const next = ()=>goTo(current+1);
+const prev = ()=>goTo(current-1);
+
+document.getElementById('next').addEventListener('click', next);
+document.getElementById('prev').addEventListener('click', prev);
+document.getElementById('tapNext').addEventListener('click', next);
+document.getElementById('tapPrev').addEventListener('click', prev);
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='ArrowRight' || e.key===' '){ e.preventDefault(); next(); }
+  if(e.key==='ArrowLeft'){ e.preventDefault(); prev(); }
+});
+
+let sx=0, sy=0, tracking=false;
+const stage = document.querySelector('.stage');
+stage.addEventListener('touchstart', e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; tracking=true; }, {passive:true});
+stage.addEventListener('touchend', e=>{
+  if(!tracking) return; tracking=false;
+  const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+  if(Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)*1.2){ dx<0?next():prev(); }
+}, {passive:true});
+
+build();
+</script>
+</body>
+</html>
